@@ -3,7 +3,7 @@
 
 require 'libfchat/fchat'
 require 'yaml'
-require 'pp'
+require 'logger'
 
 class Libfchat::Fchat
   attr_accessor :last_spun
@@ -49,19 +49,13 @@ class Libfchat::Fchat
   
   # Respond to messages in chatrooms
   def got_MSG(message)
-    if @spam
-      puts "got_MSG(#{message})"
-    end
+    @logger.info("got_MSG(#{message})")
     self.fix_skiplist(message['channel'])
     self.remove_from_skip_list(message['channel'], message['character'])
     if message['message'].downcase =~ /^!spin/
-      if @spam
-        puts "got_MSG() - spinning the bottle"
-      end
+      @logger.info("got_MSG() - spinning the bottle")
       players = self.spin_list(message['channel'], message['character'])
-      if @spam
-        puts "got_MSG() - players: #{players}"
-      end
+      @logger.info("got_MSG() - players: #{players}")
       if players == []
         msg = "/me can't find anyone to play with!"
       else
@@ -71,15 +65,11 @@ class Libfchat::Fchat
       self.send('MSG',message['channel'],msg)
     elsif message['message'].downcase =~ /^!skip/
       person = message['message'].gsub(/^!skip/, '').strip
-      if @spam
-        puts "got_MSG() - Skipping someone, possibly #{person}"
-      end
+      @logger.info("got_MSG() - Skipping someone, possibly #{person}")
       if person == ''
         person = message['character']
       end
-      if @spam
-        puts "got_MSG() - Skipping someone, actually #{person}"
-      end
+      @logger.info("got_MSG() - Skipping someone, actually #{person}")
       self.add_to_skip_list(message['channel'], person)
     end
   end
@@ -117,49 +107,49 @@ class Libfchat::Fchat
   end
 
   def fix_skiplist(channel)
-    if @spam
-      puts "fix_skiplist(#{channel})"
-    end
+    @logger.info("fix_skiplist(#{channel})")
     if @rooms[channel]['skiplist'] == nil
-      if @spam
-        puts "fix_skiplist() - fixing"
-      end
+      @logger.info("fix_skiplist() - fixing")
       @rooms[channel]['skiplist'] = []
     end
-    if @spam
-      puts "fix_skiplist() - #{@rooms[channel['skiplist']]}"
-    end
+    @logger.info("fix_skiplist() - #{@rooms[channel['skiplist']]}")
   end
 
   def spin_list(channel, character)
     eligible = @rooms[channel]['characters']
     eligible.delete(@me)
+    eligible.delete(character)
     self.fix_skiplist(channel)
-    puts "I am #{self.me}"
-    @rooms[channel]['characters'].each do |char|
-      puts "char: #{char} - #{@users[char]}"
-      if @users[char]['status'] == 'busy'
-        puts "Removing #{char} for being busy"
-        eligible.delete(char)
-      elsif @users[char]['status'] == 'dnd'
-        puts "Removing #{char} for being dnd"
-        eligible.delete(char)
-      elsif @users[char]['status'] == 'away'
-        puts "Removing #{char} for being away"
-        eligible.delete(char)
-      elsif @rooms[channel]['skiplist'].include? char
-        puts "Removing #{char} in skiplist"
-        eligible.delete(char)
-      elsif char == character
-        puts "Removing #{char} == character"
+    @rooms[channel]['characters'].each { |char|
+      @logger.info("char: #{char} - #{@users[char]}")
+      if character_spinnable(channel, char) == false
         eligible.delete(char)
       end
-    end
+    }
     return eligible
+  end
+
+  def character_spinnable(channel, character)
+    puts "character_spinnable(#{channel}, #{character})"
+    if @users[character]['status'] == 'busy'
+      puts "Removing #{char} for being busy"
+      return false
+    elsif @users[char]['status'] == 'dnd'
+      puts "Removing #{char} for being dnd"
+      return false
+    elsif @users[char]['status'] == 'away'
+      puts "Removing #{char} for being away"
+      return false
+    elsif @rooms[channel]['skiplist'].include? char
+      puts "Removing #{char} in skiplist"
+      return false
+    end
+    return true
   end
 end
 
 bot = Libfchat::Fchat.new("Bottlebot by Jippen Faddoul ( http://github.com/jippen/fchat_bottlebot_ruby )","1.0")
+bot.logger.level = Logger::INFO
 config = YAML.load_file('bottlebot.yaml')
 
 bot.login(config['server'],config['username'],config['password'],config['character'])
