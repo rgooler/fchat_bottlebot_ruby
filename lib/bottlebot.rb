@@ -5,7 +5,7 @@ require 'libfchat/fchat'
 require 'yaml'
 require 'logger'
 
-class Libfchat::Fchat
+class Bottlebot < Libfchat::Fchat
   attr_accessor :last_spun
   attr_accessor :current_player
 
@@ -147,9 +147,3 @@ class Libfchat::Fchat
     return true
   end
 end
-
-bot = Libfchat::Fchat.new("Bottlebot by Jippen Faddoul ( http://github.com/jippen/fchat_bottlebot_ruby )","1.0")
-bot.logger.level = Logger::INFO
-config = YAML.load_file('bottlebot.yaml')
-
-bot.login(config['server'],config['username'],config['password'],config['character'])

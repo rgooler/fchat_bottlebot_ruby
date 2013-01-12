@@ -11,6 +11,7 @@ spec/reports
 test/tmp
 test/version_tmp
 tmp
+Gemfile.lock
 
 # YARD artifacts
 .yardoc
@@ -18,9 +19,8 @@ _yardoc
 doc/
 
 #Config file
-bottlebot.yaml
+conf/fchat.yaml
 
-#Other files
-libfchat
-bottlebot.err
-bottlebot.log
+#Logs
+log/*.log
+log/*.err
