@@ -8,18 +8,19 @@ A basic 'spin the bottle' game bot, designed for running in F-chat ( http://f-li
 Installation
 ============
 
-Linux
------
-    gem install libfchat
-    ruby bottlebot.rb
+* Install ruby 1.9.3    
 
-Windows
--------
+* For windows, try http://rubyinstaller.org/downloads/ 
+* - be sure to click the three checkboxes when it asks where to install the program
+* - Install current DevKit from same page
 
-Install Ruby 1.9.3 from http://rubyinstaller.org/downloads/
-* be sure to click the three checkboxes when it asks where to install the program
+Configuration
+=============
+* Copy config/fchat.yaml.example to config/fchat.yaml
+* Edit config/fchat.yaml to contain your own credentials
 
-Install current DevKit from same page
+Run
+===
 
-    gem install eventmachine --pre
-    gem install libfchat
+    bundle install
+    bundle exec run 
