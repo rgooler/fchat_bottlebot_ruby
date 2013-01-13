@@ -23,4 +23,4 @@ Run
 ===
 
     bundle install
-    bundle exec run 
+    bundle exec rake run 
