@@ -10,20 +10,12 @@ task :default => :test
 
 task :test => [:spec]
 
-desc "build gem package"
-task :build do
-    sh 'gem build libfchat.gemspec'
-end
-
-desc "Release new version of gem"
-task :release => :build do
-    sh "git tag -a v#{Libfchat::VERSION} -m 'Release #{Libfchat::VERSION}'"
-    sh "git push --tags"
-    system "gem push libfchat-#{Libfchat::VERSION}.gem"
-    sh 'mv *.gem pkg/'
-end
-
 RSpec::Core::RakeTask.new do |t|
   t.ruby_opts = '-w'
   t.rspec_opts = '--color --format nested'
+end
+
+desc "build gem package"
+task :run do
+    sh 'ruby bin/bot.rb'
 end
