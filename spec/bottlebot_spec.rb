@@ -102,11 +102,57 @@ describe Bottlebot do
     end
     
     it "Skips a user that was skipped by someone else" do
-      @fchat.logger.level = Logger::DEBUG
       @fchat.parse_message(%q@MSG {"channel":"ADH-testroom","message":"!skip TestUser_26","character":"TestUser_1195"}@)
-      puts "Message parsed"
+      @fchat.character_spinnable('ADH-testroom', 'TestUser_26').should be_false
+    end
+    
+    it "Skips a user that was skipped by someone else - case insensitive" do
+      @fchat.parse_message(%q@MSG {"channel":"ADH-testroom","message":"!skip testuser_26","character":"TestUser_1195"}@)
       @fchat.character_spinnable('ADH-testroom', 'TestUser_26').should be_false
     end
   end
+  
+  describe "spin_list()" do
+      before(:each) do
+        join_test_room()
+      end
+
+      it "skips the user that spun" do
+        spinlist = @fchat.spin_list('ADH-testroom', 'TestUser_26')
+        spinlist.should_not include('TestUser_26')
+      end
+      
+      it "Generates a valid spin list with no skip list" do
+        spinlist = @fchat.spin_list('ADH-testroom', 'TestUser_26')
+        spinlist.should include('TestUser_1195')
+        spinlist.should include('TestUser_896')
+        spinlist.should_not include('Testbot')
+        spinlist.should_not include('TestUser_26')
+        spinlist.should include('TestUser_950')
+        spinlist.should include('TestUser_670')
+        spinlist.should include('TestUser_1047')
+        spinlist.should_not include('TestUser_6')
+        spinlist.should_not include('TestUser_1278')
+        spinlist.should_not include('TestUser_1174')
+        spinlist.should_not include('TestUser_1113')
+      end
+
+      it "Generates a valid spin list with a skip list" do
+        @fchat.parse_message(%q@MSG {"channel":"ADH-testroom","message":"!skip","character":"TestUser_1195"}@)
+        spinlist = @fchat.spin_list('ADH-testroom', 'TestUser_26')
+        spinlist.should_not include('TestUser_1195')
+        spinlist.should include('TestUser_896')
+        spinlist.should_not include('Testbot')
+        spinlist.should_not include('TestUser_26')
+        spinlist.should include('TestUser_950')
+        spinlist.should include('TestUser_670')
+        spinlist.should include('TestUser_1047')
+        spinlist.should_not include('TestUser_6')
+        spinlist.should_not include('TestUser_1278')
+        spinlist.should_not include('TestUser_1174')
+        spinlist.should_not include('TestUser_1113')
+      end
+      
+    end
 
 end

@@ -103,9 +103,8 @@ class Bottlebot < Libfchat::Fchat
       return
     end
 
-    msg = "Now skipping: [b]#{person}[/b]"
     @rooms[channel]['skiplist'] << person
-    self.MSG(channel, msg)
+    self.MSG(channel, "Now skipping: [b]#{person}[/b]")
   end
 
   def fix_skiplist(channel)
@@ -115,39 +114,31 @@ class Bottlebot < Libfchat::Fchat
   end
 
   def spin_list(channel, character)
+    @logger.info("spin_list()")
     eligible = @rooms[channel]['characters']
-    eligible.delete(@me)
-    eligible.delete(character)
+    @logger.info("eligible - #{eligible}")
     self.fix_skiplist(channel)
-    @rooms[channel]['characters'].each { |char|
-      @logger.info("char: #{character} - #{@users[character]}")
-      if character_spinnable(channel, character) == false
-        eligible.delete(character)
-      end
-    }
+    @logger.info("fix skip list")
+    eligible.delete_if { |c| character_spinnable(channel, c) == false }
+    eligible.delete(character)
     return eligible
   end
 
-  def character_spinnable(channel, character)
+  def character_spinnable(channel, character)  
     fix_skiplist(channel)
-    @logger.info("character_spinnable(#{channel}, #{character})")
-    if @users[character]['status'] == 'busy'
-      @logger.info("Removing #{character} for being busy")
+    status = @users[character]['status']
+    begin
+      if ['busy', 'dnd', 'away'].include? status
+        return false
+      elsif character == @me
+        return false
+      elsif @rooms[channel]['skiplist'].include? character
+        return false
+      else
+        return true
+      end
+    rescue
       return false
-    elsif @users[character]['status'] == 'dnd'
-      @logger.info("Removing #{character} for being dnd")
-      return false
-    elsif @users[character]['status'] == 'away'
-      @logger.info("Removing #{character} for being away")
-      return false
-    elsif character == @me
-      @logger.info("Removing #{character} for being myself")
-      return false
-    elsif @rooms[channel]['skiplist'].include? character
-      @logger.info("Removing #{character} in skiplist")
-      return false
-    else
-      return true
     end
   end
 end
