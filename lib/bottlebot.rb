@@ -60,7 +60,7 @@ class Bottlebot < Libfchat::Fchat
     elsif message['message'] =~ /^!skip/
       person = message['message'].gsub(/^!skip/, '').strip
       self.add_to_skip_list(message['channel'], person)
-    elsif message['message'].starts_with '!spin'
+    elsif message['message'] =~ /^!spin/
       @logger.info("got_MSG() - spinning the bottle")
       players = self.spin_list(message['channel'], message['character'])
       @logger.info("got_MSG() - players: #{players}")
