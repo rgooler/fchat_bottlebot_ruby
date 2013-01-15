@@ -9,15 +9,6 @@ class Bottlebot < Libfchat::Fchat
   attr_accessor :last_spun
   attr_accessor :current_player
 
-
-  # Join chatrooms on invite
-  def got_CIU(message)
-    #Annoyingly, the json for this varies for public and private rooms.
-    #So just try both and call it a day.
-    self.send('JCH',message['name'])
-    self.send('JCH',message['channel'])
-  end
-  
   # Respond to private messages
   def got_PRI(message)
     if message['message'] =~ /^join/
@@ -29,6 +20,15 @@ class Bottlebot < Libfchat::Fchat
       msg += @users[who]['status'] + "\n"
       msg += @users[who]['message'] 
       self.PRI(message['character'], msg)
+    elsif message['message'] == 'dump'
+      print @users.inspect
+    elsif message['message'] == 'dumproom'
+      @rooms.each { |r|
+        puts r
+        @rooms[r]['characters'].each {|char|
+          puts @users[char]
+        }  
+      }
     elsif message['message'] =~ /^leave/
       if @friends.include? message['character']
         room = message['message'].gsub(/^leave/, '').strip
@@ -49,10 +49,18 @@ class Bottlebot < Libfchat::Fchat
   
   # Respond to messages in chatrooms
   def got_MSG(message)
-    @logger.info("got_MSG(#{message})")
+    @logger.info("got_MSG()")
+    @logger.info("got_MSG() - #{message['message']}")
     self.fix_skiplist(message['channel'])
+    @logger.info("got_MSG() - fix_skiplist()")
     self.remove_from_skip_list(message['channel'], message['character'])
-    if message['message'].downcase =~ /^!spin/
+    @logger.info("got_MSG() - remove_from_skip_list()")
+    if message['message'] == '!skip'
+      self.add_to_skip_list(message['channel'], message['character'])
+    elsif message['message'] =~ /^!skip/
+      person = message['message'].gsub(/^!skip/, '').strip
+      self.add_to_skip_list(message['channel'], person)
+    elsif message['message'].starts_with '!spin'
       @logger.info("got_MSG() - spinning the bottle")
       players = self.spin_list(message['channel'], message['character'])
       @logger.info("got_MSG() - players: #{players}")
@@ -63,14 +71,8 @@ class Bottlebot < Libfchat::Fchat
         msg = "/me spins around, and eventually lands on [b]#{player}[/b]"
       end
       self.send('MSG',message['channel'],msg)
-    elsif message['message'].downcase =~ /^!skip/
-      person = message['message'].gsub(/^!skip/, '').strip
-      @logger.info("got_MSG() - Skipping someone, possibly #{person}")
-      if person == ''
-        person = message['character']
-      end
-      @logger.info("got_MSG() - Skipping someone, actually #{person}")
-      self.add_to_skip_list(message['channel'], person)
+    else
+      @logger.info("gotMSG() - parseFail")
     end
   end
 
@@ -107,12 +109,9 @@ class Bottlebot < Libfchat::Fchat
   end
 
   def fix_skiplist(channel)
-    @logger.info("fix_skiplist(#{channel})")
     if @rooms[channel]['skiplist'] == nil
-      @logger.info("fix_skiplist() - fixing")
       @rooms[channel]['skiplist'] = []
     end
-    @logger.info("fix_skiplist() - #{@rooms[channel['skiplist']]}")
   end
 
   def spin_list(channel, character)
@@ -121,29 +120,34 @@ class Bottlebot < Libfchat::Fchat
     eligible.delete(character)
     self.fix_skiplist(channel)
     @rooms[channel]['characters'].each { |char|
-      @logger.info("char: #{char} - #{@users[char]}")
-      if character_spinnable(channel, char) == false
-        eligible.delete(char)
+      @logger.info("char: #{character} - #{@users[character]}")
+      if character_spinnable(channel, character) == false
+        eligible.delete(character)
       end
     }
     return eligible
   end
 
   def character_spinnable(channel, character)
-    puts "character_spinnable(#{channel}, #{character})"
+    fix_skiplist(channel)
+    @logger.info("character_spinnable(#{channel}, #{character})")
     if @users[character]['status'] == 'busy'
-      puts "Removing #{char} for being busy"
+      @logger.info("Removing #{character} for being busy")
       return false
-    elsif @users[char]['status'] == 'dnd'
-      puts "Removing #{char} for being dnd"
+    elsif @users[character]['status'] == 'dnd'
+      @logger.info("Removing #{character} for being dnd")
       return false
-    elsif @users[char]['status'] == 'away'
-      puts "Removing #{char} for being away"
+    elsif @users[character]['status'] == 'away'
+      @logger.info("Removing #{character} for being away")
       return false
-    elsif @rooms[channel]['skiplist'].include? char
-      puts "Removing #{char} in skiplist"
+    elsif character == @me
+      @logger.info("Removing #{character} for being myself")
       return false
+    elsif @rooms[channel]['skiplist'].include? character
+      @logger.info("Removing #{character} in skiplist")
+      return false
+    else
+      return true
     end
-    return true
   end
 end
